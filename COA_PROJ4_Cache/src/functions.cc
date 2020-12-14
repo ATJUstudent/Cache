@@ -1,5 +1,6 @@
 #include "class_cache.h"
 
+using namespace std;
 
 uint32_t char_to_hex(char s)
 {
@@ -37,8 +38,8 @@ Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_pol
     next = nullptr;
 
     int  S = size / (block_size * assoc);
-    int   s =  log(S) /  log(2);
-    int   b = log(block_size) / log(2);
+    this.s =  log(S) /  log(2);
+    this.b = log(block_size) / log(2);
    //int   t  =  32 - s - b;
     //int  single_long = 1 + t ;
 
@@ -128,12 +129,59 @@ bool Cache::LFU()
     return true;
 }
 
-bool Cache::WBWA()
+bool Cache::WBWA(int index, int tag)
 {
-    return true;
+    bool hit = 0;// hit = 1 待写入地址数据在cache中
+    int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
+    uint32_t set = index * this.assoc;
+    for(int i = 0;i < assoc;i++)
+    {
+	if(this.containt[set + i][0] == 1 && this.containt[set + i][1] == tag)
+	{
+	    if(this.containt[set + i][1] == tag)
+	    {
+		hit = 1;
+		available = i;
+		break;
+	    }
+	}
+	else
+	{
+	    available = i;
+	}
+    }
+
+    if(hit == 1)
+    {// 命中
+	this.containt[set + available][2] = 1;// dirty
+	for(int i = 0;i < assoc;i++)
+	{
+	    if(this.containt[set + i][3] < this.containt[set + available][3]) this.containt[set + i][3] += 1;
+	}
+	this.containt[set + i][3] = 0;
+	return true;
+    }
+    else if(available != -1)
+    {// 不命中,但有空闲块
+	for(int i = 0;i < assoc;i++)
+	{
+	    this.containt[set + i][3] += 1;
+	}
+
+	this.containt[set + available][0] = 1;// invalid
+	this.containt[set + available][1] = tag;// tag
+	this.containt[set + available][2] = 1;// dirty
+	this.containt[set + available][3] = 0;// reference_num
+	return true;
+    }
+    else
+    {// 不命中,且无空闲块
+	replace_func();
+	return WBWA(index, tag);
+    }
 }
 
-bool Cache::WTNA()
+bool Cache::WTNA
 {
     return true;
 }

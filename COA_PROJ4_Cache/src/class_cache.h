@@ -19,6 +19,7 @@ private:
 
     
 public:
+    int  s,b;
     int     read_num;
     int     write_num;
     int     read_miss;
@@ -38,7 +39,7 @@ public:
     
     static bool    LRU();
     static bool    LFU();
-    static bool    WBWA();
+    static bool    WBWA(int index, int tag);
     static bool    WTNA();
 };
 
