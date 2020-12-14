@@ -37,9 +37,9 @@ public:
     void     deal_file(string   file_name);
     void     printcontaint();
     
-    static bool    LRU();
+    static bool    LRU(uint32_t index, uint32_t tag);
     static bool    LFU();
-    static bool    WBWA(int index, int tag);
+    static bool    WBWA(uint32_t index, uint32_t tag);
     static bool    WTNA();
 };
 

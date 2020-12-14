@@ -119,8 +119,62 @@ bool Cache::writeToAddress(unsigned int add)
     return true;
 }
 
-bool Cache::LRU()
+bool Cache::LRU(uint32_t index, uint32_t tag)
 {
+    bool hit = 0;// hit = 1 待写入地址数据在cache中
+    int indexOfMaxRef = 0;
+    int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
+    uint32_t set = index * this.assoc;
+    for(int i = 0;i < assoc;i++)
+    {
+	if(this.containt[set + i][0] == 1 && this.containt[set + i][1] == tag)
+	{
+	    if(this.containt[set + i][1] == tag)
+	    {
+		hit = 1;
+		available = i;
+		break;
+	    }
+	    if(this.containt[set + i][3] > indexOfMaxRef)
+	    {
+		indexOfMaxRef = i;
+	    }
+	}
+	else
+	{
+	    available = i;
+	}
+    }
+    
+    if(hit == 1)
+    {// 命中
+	for(int i = 0;i < assoc;i++)
+	{
+	    if(this.containt[set + i][3] < this.containt[set + available][3]) this.containt[set + i][3] += 1;
+	}
+	containt[set + i][3] = 0;
+	return true;
+    }
+    else if(available != -1)
+    {// 不命中,但有空闲块
+	for(int i = 0;i < assoc;i++)
+	{
+	    containt[set + i][3] += 1;
+	}
+
+	containt[set + available][0] = 1;// invalid
+	containt[set + available][1] = tag;// tag
+	containt[set + available][2] = 1;// dirty
+	containt[set + available][3] = 0;// reference_num
+	return true;
+    }
+    else
+    {// 不命中,且无空闲块
+	containt[set + indexOfMaxRef][1] = tag;
+	containt[set + available][2] = 0;// dirty
+	containt[set + available][3] = 0;// reference_num
+	return true;
+    }
     return true;
 }
 
@@ -129,7 +183,7 @@ bool Cache::LFU()
     return true;
 }
 
-bool Cache::WBWA(int index, int tag)
+bool Cache::WBWA(uint32_t index, uint32_t tag)
 {
     bool hit = 0;// hit = 1 待写入地址数据在cache中
     int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
@@ -158,7 +212,7 @@ bool Cache::WBWA(int index, int tag)
 	{
 	    if(this.containt[set + i][3] < this.containt[set + available][3]) this.containt[set + i][3] += 1;
 	}
-	this.containt[set + i][3] = 0;
+	this.containt[set + available][3] = 0;
 	return true;
     }
     else if(available != -1)
