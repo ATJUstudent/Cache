@@ -119,7 +119,7 @@ bool Cache::writeToAddress(unsigned int add)
     return true;
 }
 
-bool Cache::LRU(uint32_t index, uint32_t tag)
+bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)
 {
     bool hit = 0;// hit = 1 待写入地址数据在cache中
     int indexOfMaxRef = 0;
@@ -166,6 +166,9 @@ bool Cache::LRU(uint32_t index, uint32_t tag)
 	containt[set + available][1] = tag;// tag
 	containt[set + available][2] = 1;// dirty
 	containt[set + available][3] = 0;// reference_num
+
+	read_miss = 1;
+
 	return true;
     }
     else
@@ -173,6 +176,8 @@ bool Cache::LRU(uint32_t index, uint32_t tag)
 	containt[set + indexOfMaxRef][1] = tag;
 	containt[set + available][2] = 0;// dirty
 	containt[set + available][3] = 0;// reference_num
+
+	if(!fromWrite) read_miss += 1;
 	return true;
     }
     return true;
@@ -226,11 +231,15 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)
 	this.containt[set + available][1] = tag;// tag
 	this.containt[set + available][2] = 1;// dirty
 	this.containt[set + available][3] = 0;// reference_num
+	
+	write_miss += 1;
+
 	return true;
     }
     else
     {// 不命中,且无空闲块
-	replace_func();
+	write_miss += 1;
+	this->(*read_func)();
 	return WBWA(index, tag);
     }
 }
