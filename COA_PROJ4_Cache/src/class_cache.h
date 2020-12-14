@@ -26,8 +26,8 @@ public:
     int     write_miss;
     int     to_memory_num;
 
-    bool   (Cache:: *read_func)();
-    bool   (Cache:: *write_func)();
+    bool   (Cache:: *read_func)(uint32_t,uint32_t,bool);
+    bool   (Cache:: *write_func)(uint32_t,uint32_t);
 
     Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_policy,int in_write_policy);
     ~Cache();
@@ -37,10 +37,10 @@ public:
     void     deal_file(string   file_name);
     void     printcontaint();
     
-    static bool    LRU(uint32_t index, uint32_t tag, bool fromWrite);
-    static bool    LFU();
-    static bool    WBWA(uint32_t index, uint32_t tag);
-    static bool    WTNA();
+    bool    LRU(uint32_t index, uint32_t tag, bool fromWrite);
+    bool    LFU(uint32_t index, uint32_t tag, bool fromWrite);
+    bool    WBWA(uint32_t index, uint32_t tag);
+    bool    WTNA(uint32_t index, uint32_t tag);
 };
 
 

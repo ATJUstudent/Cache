@@ -111,12 +111,16 @@ void Cache::deal_file(string    file_name)
 
 bool Cache::readFromAddress(unsigned int add)
 {
-    return true;   
+    uint32_t  tag_containt  =   add>>(s+b);
+    uint32_t  index_containt    =   (add<<32-s-b)>>(32-s);
+    return  (this->*read_func)(index_containt,tag_containt,false);
 }
 
 bool Cache::writeToAddress(unsigned int add)
 {
-    return true;
+    uint32_t  tag_containt  =   add>>(s+b);
+    uint32_t  index_containt    =   (add<<32-s-b)>>(32-s);
+    return  (this->*write_func)(index_containt,tag_containt);
 }
 
 bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)
@@ -124,18 +128,18 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)
     bool hit = 0;// hit = 1 待写入地址数据在cache中
     int indexOfMaxRef = 0;
     int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
-    uint32_t set = index * this.assoc;
+    uint32_t set = index * assoc;
     for(int i = 0;i < assoc;i++)
     {
-	if(this.containt[set + i][0] == 1 && this.containt[set + i][1] == tag)
+	if(containt[set + i][0] == 1 && containt[set + i][1] == tag)
 	{
-	    if(this.containt[set + i][1] == tag)
+	    if(containt[set + i][1] == tag)
 	    {
 		hit = 1;
 		available = i;
 		break;
 	    }
-	    if(this.containt[set + i][3] > indexOfMaxRef)
+	    if(containt[set + i][3] > indexOfMaxRef)
 	    {
 		indexOfMaxRef = i;
 	    }
@@ -150,9 +154,9 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)
     {// 命中
 	for(int i = 0;i < assoc;i++)
 	{
-	    if(this.containt[set + i][3] < this.containt[set + available][3]) this.containt[set + i][3] += 1;
+	    if(containt[set + i][3] < containt[set + available][3]) containt[set + i][3] += 1;
 	}
-	containt[set + i][3] = 0;
+	containt[set + available][3] = 0;
 	return true;
     }
     else if(available != -1)
@@ -167,7 +171,7 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)
 	containt[set + available][2] = 1;// dirty
 	containt[set + available][3] = 0;// reference_num
 
-	read_miss = 1;
+	read_miss += 1;
 
 	return true;
     }
@@ -183,7 +187,7 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)
     return true;
 }
 
-bool Cache::LFU()
+bool Cache::LFU(uint32_t index, uint32_t tag, bool fromWrite)
 {
     return true;
 }
@@ -238,12 +242,12 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)
     else
     {// 不命中,且无空闲块
 	write_miss += 1;
-	bool flag  =    (this->*read_func)();
+	bool flag  =    (this->*read_func)(index,tag,true);
 	return WBWA(index, tag);
     }
 }
 
-bool Cache::WTNA()
+bool Cache::WTNA(uint32_t index, uint32_t tag)
 {
     return true;
 }
