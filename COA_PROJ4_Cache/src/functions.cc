@@ -38,8 +38,8 @@ Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_pol
     next = nullptr;
 
     int  S = size / (block_size * assoc);
-    this.s =  log(S) /  log(2);
-    this.b = log(block_size) / log(2);
+    s =  log(S) /  log(2);
+    b = log(block_size) / log(2);
    //int   t  =  32 - s - b;
     //int  single_long = 1 + t ;
 
@@ -56,10 +56,10 @@ Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_pol
 
     //LRU:  0               LFU:    1
     if(replacement_policy == 0)
-        replace_func = &LRU;
+        read_func = &LRU;
     else
     {
-        replace_func = &LFU;
+        read_func = &LFU;
     }
     //WBWA: 0           WTNA:   1
     if(write_policy == 0){
@@ -192,12 +192,12 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)
 {
     bool hit = 0;// hit = 1 待写入地址数据在cache中
     int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
-    uint32_t set = index * this.assoc;
+    uint32_t set = index * assoc;
     for(int i = 0;i < assoc;i++)
     {
-	if(this.containt[set + i][0] == 1 && this.containt[set + i][1] == tag)
+	if(containt[set + i][0] == 1 && containt[set + i][1] == tag)
 	{
-	    if(this.containt[set + i][1] == tag)
+	    if(containt[set + i][1] == tag)
 	    {
 		hit = 1;
 		available = i;
@@ -212,39 +212,38 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)
 
     if(hit == 1)
     {// 命中
-	this.containt[set + available][2] = 1;// dirty
+	    containt[set + available][2] = 1;// dirty
 	for(int i = 0;i < assoc;i++)
 	{
-	    if(this.containt[set + i][3] < this.containt[set + available][3]) this.containt[set + i][3] += 1;
+	    if(containt[set + i][3] < containt[set + available][3]) containt[set + i][3] += 1;
 	}
-	this.containt[set + available][3] = 0;
+	containt[set + available][3] = 0;
 	return true;
     }
     else if(available != -1)
     {// 不命中,但有空闲块
 	for(int i = 0;i < assoc;i++)
 	{
-	    this.containt[set + i][3] += 1;
+        containt[set + i][3] += 1;
 	}
 
-	this.containt[set + available][0] = 1;// invalid
-	this.containt[set + available][1] = tag;// tag
-	this.containt[set + available][2] = 1;// dirty
-	this.containt[set + available][3] = 0;// reference_num
-	
 	write_miss += 1;
 
+	containt[set + available][0] = 1;// invalid
+	containt[set + available][1] = tag;// tag
+	containt[set + available][2] = 1;// dirty
+	containt[set + available][3] = 0;// reference_num
 	return true;
     }
     else
     {// 不命中,且无空闲块
 	write_miss += 1;
-	this->(*read_func)();
+	bool flag  =    (this->*read_func)();
 	return WBWA(index, tag);
     }
 }
 
-bool Cache::WTNA
+bool Cache::WTNA()
 {
     return true;
 }
