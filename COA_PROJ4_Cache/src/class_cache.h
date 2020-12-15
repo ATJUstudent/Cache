@@ -16,6 +16,8 @@ private:
     int  write_policy;
     uint32_t** containt;
     Cache *next;
+	
+	uint32_t* count_set;
 
     
 public:
