@@ -200,7 +200,7 @@ bool Cache::LFU(uint32_t index, uint32_t tag, bool fromWrite)
 	for(int i = 0;i < assoc;i++){
 		if(containt[set + i][0] == 1 && containt[set + i][1] == tag){
 			hit = 1;
-			availabel = i;
+			available = i;
 			break;
 		}else if(containt[set + i][0] == 0){
 			available = i;
@@ -208,13 +208,13 @@ bool Cache::LFU(uint32_t index, uint32_t tag, bool fromWrite)
 	}
 	
 	if(hit == 1){
-		containt[set + availabel][3] += 1;
+		containt[set + available][3] += 1;
 	}else{
-		if(availabel >= 0){
-			containt[set + availabel][0] = 1;
-			containt[set + availabel][1] = tag;
-			containt[set + availabel][2] = 0;
-			containt[set + availabel][3] = count_set[index];
+		if(available >= 0){
+			containt[set + available][0] = 1;
+			containt[set + available][1] = tag;
+			containt[set + available][2] = 0;
+			containt[set + available][3] = count_set[index];
 		}else{
 			int mini = 0;
 			for(int i = 1;i < assoc;i++){
@@ -228,10 +228,10 @@ bool Cache::LFU(uint32_t index, uint32_t tag, bool fromWrite)
 			containt[set + mini][2] = 0;
 			containt[set + mini][3] = count_set[index];
 		}
-		if(!fromwrite)
-			readmiss += 1;
+		if(!fromWrite)
+			read_miss += 1;
 		else 
-			writemiss += 1;
+			write_miss += 1;
 	}
     return true;
 }
