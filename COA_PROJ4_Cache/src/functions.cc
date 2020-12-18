@@ -165,6 +165,7 @@ void Cache::deal_file(string    file_name)
 
 bool Cache::readFromAddress(unsigned int add)
 {
+    read_num++;
     uint32_t  tag_containt  =   add>>(s+b);
     uint32_t  index_containt    =   (add<<(32-s-b))>>(32-s);
     return  (this->*read_func)(index_containt,tag_containt,false);
@@ -172,6 +173,7 @@ bool Cache::readFromAddress(unsigned int add)
 
 bool Cache::writeToAddress(unsigned int add)
 {
+    write_num++;
     uint32_t  tag_containt  =   add>>(s+b);
     uint32_t  index_containt    =   (add<<(32-s-b))>>(32-s);
     return  (this->*write_func)(index_containt,tag_containt);
@@ -230,10 +232,12 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)       // 0
 	return true;
     }
     else
-    {// 不命中,且无空闲块
+    {// 不命中,且无空闲块to_memory_num
+	if(containt[set + indexOfMaxRef][2] == 1) to_memory_num += 1;//is dirty
+	
 	containt[set + indexOfMaxRef][1] = tag;
-	containt[set + available][2] = 0;// dirty
-	containt[set + available][3] = 0;// reference_num
+	containt[set + indexOfMaxRef][2] = 0;// dirty
+	containt[set + indexOfMaxRef][3] = 0;// reference_num
 
 	if(!fromWrite) read_miss += 1;
 	return true;
@@ -309,27 +313,42 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)                  //0
 
     if(hit == 1)
     {// 命中
-	    containt[set + available][2] = 1;// dirty
-	for(int i = 0;i < assoc;i++)
+	containt[set + available][2] = 1;// dirty
+		
+	if(replacement_policy)// LFU
+	    containt[set + available][3] += 1;
+	else// LRU
 	{
-	    if(containt[set + i][3] < containt[set + available][3]) containt[set + i][3] += 1;
+	    for(int i = 0;i < assoc;i++)
+	    {
+		if(containt[set + i][3] < containt[set + available][3]) containt[set + i][3] += 1;
+	    }
+	    containt[set + available][3] = 0;
 	}
-	containt[set + available][3] = 0;
+
 	return true;
     }
     else if(available != -1)
     {// 不命中,但有空闲块
-	for(int i = 0;i < assoc;i++)
-	{
-        containt[set + i][3] += 1;
-	}
 
+	if(replacement_policy)// LFU
+	    containt[set + available][3] = count_set[index];
+	else// LRU
+	{
+	    for(int i = 0;i < assoc;i++)
+	    {
+		containt[set + i][3] += 1;
+	    }
+	    containt[set + available][3] = 0;// reference_num
+	}
+	
 	write_miss += 1;
 
 	containt[set + available][0] = 1;// invalid
 	containt[set + available][1] = tag;// tag
 	containt[set + available][2] = 1;// dirty
-	containt[set + available][3] = 0;// reference_num
+
+
 	return true;
     }
     else
@@ -347,20 +366,19 @@ bool Cache::WTNA(uint32_t index, uint32_t tag)                  //1
 
 void Cache::printcontaint()
 {
-    cout<<endl;
+    cout << "===== L1 contents =====" << endl;
     for(int i=0;i<pow(2,s);i++){
-        cout<<"set   "<<i<<":";
+	printf("set%4d:",i);
         string res_tag = "";
         for(int j=0;j<assoc;j++){
-            res_tag += "    ";
             int index = i*assoc+j;
             string tmp = tag_to_string(containt[index][1],s,b);
-            res_tag += tmp;
-
+	    printf("%8s",tmp.c_str());
             if (containt[index][2]==1)
-                res_tag += " D";
+                printf(" D");
+	    else printf("  ");
         }
-        cout<<res_tag<<endl;
+	printf("\n");
     }
     return;
 }
