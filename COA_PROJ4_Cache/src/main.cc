@@ -18,5 +18,10 @@ int main(int argc, char *argv[]) {
 	/*
 	下面需要调用打印函数打印结果
 	*/
+	L1->printcontaint();
+	cout<<"a:  "<<L1->read_num<<endl;
+	cout<<"b: "<<L1->read_miss<<endl;
+	cout<<"c: "<<L1->write_num<<endl;
+	cout<<"d. "<<L1->write_miss<<endl;
 	return 0;
 }
