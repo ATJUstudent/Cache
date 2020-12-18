@@ -183,29 +183,37 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)       // 0
 {
     bool hit = 0;// hit = 1 待写入地址数据在cache中
     int indexOfMaxRef = 0;
+    int maxRef = -1;
     int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
     uint32_t set = index * assoc;
+    // printf("lru\n");
     for(int i = 0;i < assoc;i++)
     {
+	if(containt[set + i][3] > maxRef)
+	{
+	    indexOfMaxRef = i;
+	    maxRef = containt[set + i][3];
+	}
+
 	if(containt[set + i][0] == 1 && containt[set + i][1] == tag)
 	{
-	    if(containt[set + i][1] == tag)
+	    hit = 1;
+	    available = i;
+	    break;
+	}
+    }
+    if(!hit)
+    {
+	for(int i = 0;i < assoc;i++)
+	{
+	    if(containt[set + i][0] == 0)
 	    {
-		hit = 1;
 		available = i;
 		break;
 	    }
-	    if(containt[set + i][3] > indexOfMaxRef)
-	    {
-		indexOfMaxRef = i;
-	    }
-	}
-	else
-	{
-	    available = i;
 	}
     }
-    
+
     if(hit == 1)
     {// 命中
 	for(int i = 0;i < assoc;i++)
@@ -233,6 +241,7 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)       // 0
     }
     else
     {// 不命中,且无空闲块to_memory_num
+	//printf("%d\n", to_memory_num);
 	if(containt[set + indexOfMaxRef][2] == 1) to_memory_num += 1;//is dirty
 	
 	containt[set + indexOfMaxRef][1] = tag;
@@ -251,40 +260,49 @@ bool Cache::LFU(uint32_t index, uint32_t tag, bool fromWrite)           //1
 	int available = -1;
 	uint32_t set = index*assoc;
 	for(int i = 0;i < assoc;i++){
-		if(containt[set + i][0] == 1 && containt[set + i][1] == tag){
-			hit = 1;
-			available = i;
-			break;
-		}else if(containt[set + i][0] == 0){
-			available = i;
+	    if(containt[set + i][0] == 1 && containt[set + i][1] == tag){
+		hit = 1;
+		available = i;
+		break;
+	    }
+	}
+
+	if(!hit)
+	{
+	    for(int i = 0;i < assoc;i++)
+	    {
+		if(containt[set + i][0] == 0)
+		{
+		    available = i;
+		    break;
 		}
+	    }
 	}
 	
 	if(hit == 1){
-		containt[set + available][3] += 1;
+	    containt[set + available][3] += 1;
 	}else{
-		if(available >= 0){
-			containt[set + available][0] = 1;
-			containt[set + available][1] = tag;
-			containt[set + available][2] = 0;
-			containt[set + available][3] = count_set[index];
-		}else{
-			int mini = 0;
-			for(int i = 1;i < assoc;i++){
-				if(containt[set + i][3] < containt[set + mini][3]){
-					mini = i;
-				}
-			}
-			count_set[index] = containt[set + mini][3];
-			containt[set + mini][0] = 1;
-			containt[set + mini][1] = tag;
-			containt[set + mini][2] = 0;
-			containt[set + mini][3] = count_set[index];
+	    if(available >= 0){
+		containt[set + available][0] = 1;
+		containt[set + available][1] = tag;
+		containt[set + available][2] = 0;
+		containt[set + available][3] = count_set[index] + 1;
+	    }else{
+		int mini = 0;
+		for(int i = 1;i < assoc;i++){
+		    if(containt[set + i][3] < containt[set + mini][3]){
+			mini = i;
+		    }
 		}
-		if(!fromWrite)
-			read_miss += 1;
-		else 
-			write_miss += 1;
+		count_set[index] = containt[set + mini][3];
+		if(containt[set + mini][2] == 1) to_memory_num += 1;
+		containt[set + mini][0] = 1;
+		containt[set + mini][1] = tag;
+		containt[set + mini][2] = 0;
+		containt[set + mini][3] = count_set[index] + 1;
+	    }
+	    if(!fromWrite)
+		read_miss += 1;
 	}
     return true;
 }
@@ -298,16 +316,21 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)                  //0
     {
 	if(containt[set + i][0] == 1 && containt[set + i][1] == tag)
 	{
-	    if(containt[set + i][1] == tag)
+	    hit = 1;
+	    available = i;
+	    break;
+	}
+    }
+
+    if(!hit)
+    {
+	for(int i = 0;i < assoc;i++)
+	{
+	    if(containt[set + i][0] == 0)
 	    {
-		hit = 1;
 		available = i;
 		break;
 	    }
-	}
-	else
-	{
-	    available = i;
 	}
     }
 
@@ -332,7 +355,7 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)                  //0
     {// 不命中,但有空闲块
 
 	if(replacement_policy)// LFU
-	    containt[set + available][3] = count_set[index];
+	    containt[set + available][3] = count_set[index] + 1;
 	else// LRU
 	{
 	    for(int i = 0;i < assoc;i++)
@@ -372,8 +395,9 @@ void Cache::printcontaint()
         string res_tag = "";
         for(int j=0;j<assoc;j++){
             int index = i*assoc+j;
-            string tmp = tag_to_string(containt[index][1],s,b);
-	    printf("%8s",tmp.c_str());
+            //string tmp = tag_to_string(containt[index][1],s,b);
+	    //printf("%8s",tmp.c_str());
+	    printf("%8x",containt[index][1],s,b);
             if (containt[index][2]==1)
                 printf(" D");
 	    else printf("  ");
