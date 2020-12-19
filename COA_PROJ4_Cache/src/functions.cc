@@ -189,17 +189,16 @@ bool Cache::writeToAddress(unsigned int add)
 int Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)       // 0
 {
     bool hit = 0;// hit = 1 待写入地址数据在cache中
-    int indexOfMaxRef = 0;
-    int maxRef = -1;
+    int indexOfMaxRef = -1;
+    int maxRef = assoc - 1;
     int available = -1;// 欲使用的记录序号[0~assoc];available = -1 无可用空闲块
     uint32_t set = index * assoc;
     // printf("lru\n");
     for(int i = 0;i < assoc;i++)
     {
-	if(containt[set + i][0] == 1 && containt[set + i][3] > maxRef)
+	if(containt[set + i][3] == maxRef)
 	{
 	    indexOfMaxRef = i;
-	    maxRef = containt[set + i][3];
 	}
 
 	if(containt[set + i][0] == 1 && containt[set + i][1] == tag)

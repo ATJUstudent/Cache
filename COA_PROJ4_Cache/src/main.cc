@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
 	printf("%13d\n", replacement_policy);
 	printf("  %-22s","L1_WRITE_POLICY:");
 	printf("%13d\n", write_policy);
-	printf("  %-22s","trace_file:");
-	printf("%13s\n", trace_file.c_str());
+	printf("  %-21s","trace_file:");
+	printf("%14s\n", trace_file.c_str());
 	printf("  ===================================\n\n");
 	L1->printcontaint();
 	int a = L1->read_num;
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 	int f = L1->to_memory_num;
 	int g = write_policy?b+c:b+d+f;
 
-	float ht = 0.25 + 0.25*(size*1.0 / (512*1024)) + 0.025*(block_size / 16) + 0.025*(assoc);
+	float ht = 0.25 + 2.5*(size*1.0 / (512*1024)) + 0.025*(block_size / 16) + 0.025*(assoc);
 	float mp = 20 + 0.5*(block_size / 16);
 
 	float aat = ht + e*mp;
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 	printf("  g. total memory traffic:        %6d\n", g);
 
 	printf("\n  ==== Simulation results (performance) ====\n");
-	printf("  1. average access time:        %2.4f ns",aat);
-	printf("%f %f \n", ht,mp);
+	printf("  1. average access time:         %2.4f ns",aat);
+	//printf("%f %f \n", ht,mp);
 	return 0;
 }
