@@ -28,7 +28,7 @@ public:
     int     write_miss;
     int     to_memory_num;
 
-    bool   (Cache:: *read_func)(uint32_t,uint32_t,bool);
+    int   (Cache:: *read_func)(uint32_t,uint32_t,bool);
     bool   (Cache:: *write_func)(uint32_t,uint32_t);
 
     Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_policy,int in_write_policy,int trace);
@@ -40,8 +40,8 @@ public:
     void    printcontaint();
     void    trace(int index, bool fromWrite, uint32_t tag, bool printCache);
     
-    bool    LRU(uint32_t index, uint32_t tag, bool fromWrite);
-    bool    LFU(uint32_t index, uint32_t tag, bool fromWrite);
+    int     LRU(uint32_t index, uint32_t tag, bool fromWrite);
+    int     LFU(uint32_t index, uint32_t tag, bool fromWrite);
     bool    WBWA(uint32_t index, uint32_t tag);
     bool    WTNA(uint32_t index, uint32_t tag);
 };
