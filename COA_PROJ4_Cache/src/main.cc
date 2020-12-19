@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	int d = L1->write_miss;
 	float e = (b + d)*1.0 / (a + c);
 	int f = L1->to_memory_num;
-	int g = write_policy?b+d:b+d+f;
+	int g = write_policy?b+c:b+d+f;
 
 	float ht = 0.25 + 0.25*(size*1.0 / (512*1024)) + 0.025*(block_size / 16) + 0.025*(assoc);
 	float mp = 20 + 0.5*(block_size / 16);

@@ -194,7 +194,7 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)       // 0
     // printf("lru\n");
     for(int i = 0;i < assoc;i++)
     {
-	if(containt[set + i][3] > maxRef)
+	if(containt[set + i][0] == 1 && containt[set + i][3] > maxRef)
 	{
 	    indexOfMaxRef = i;
 	    maxRef = containt[set + i][3];
@@ -246,9 +246,13 @@ bool Cache::LRU(uint32_t index, uint32_t tag, bool fromWrite)       // 0
     }
     else
     {// 不命中,且无空闲块to_memory_num
-	//printf("%d\n", to_memory_num);
 	if(containt[set + indexOfMaxRef][2] == 1) to_memory_num += 1;//is dirty
 	
+	for(int i = 0;i < assoc;i++)
+	{
+	    containt[set + i][3] += 1;
+	}
+
 	containt[set + indexOfMaxRef][1] = tag;
 	containt[set + indexOfMaxRef][2] = 0;// dirty
 	containt[set + indexOfMaxRef][3] = 0;// reference_num
@@ -390,7 +394,34 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)                  //0
 
 bool Cache::WTNA(uint32_t index, uint32_t tag)                  //1
 {
-    return true;
+    bool hit = 0;
+    int available = -1;
+    uint32_t set = index*assoc;
+    for(int i = 0;i < assoc;i++){
+         if(containt[set + i][0] == 1 && containt[set + i][1] == tag){
+               hit = 1;
+               available = i;
+               break;
+           }
+    }
+    if(hit == 1){
+        if(replacement_policy)// LFU
+          containt[set + available][3] += 1;
+        else// LRU
+        {
+            for(int i = 0;i < assoc;i++)
+            {
+                if(containt[set + i][3] < containt[set + available][3]) containt[set + i][3] += 1;
+            }
+            containt[set + available][3] = 0;
+        }
+
+        return true;
+    }
+    else{
+        write_miss += 1;
+        return true;
+    }
 }
 
 void Cache::trace(int index, bool fromWrite, uint32_t tag, bool printCache)
