@@ -77,7 +77,7 @@ string tag_to_string(uint32_t tag,int s,int b)
     }
     return res;
 }
-Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_policy,int in_write_policy)
+Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_policy,int in_write_policy, int trace)
 {
     block_size =  in_block_size;                                                      
     size               = in_size;
@@ -85,6 +85,7 @@ Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_pol
     replacement_policy =  in_replacement_policy;
     write_policy  = in_write_policy;
     next = nullptr;
+    traceSet = trace;
 
     int  S = size / (block_size * assoc);
     s =  log(S) /  log(2);
@@ -101,12 +102,14 @@ Cache::Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_pol
     containt = new  uint32_t*[size/block_size];
     for(int i=0;    i<(size/block_size);    i++){
         containt[i] = new uint32_t[4];                          // invild   tag     dirty   reference_num 
+	containt[i][0] = 0;
+	containt[i][3] = 0;
     }
 	
-	count_set = new uint32_t[S];
-	for(int i = 0;i < S;i++){
-		count_set[i] = 0;
-	}
+    count_set = new uint32_t[S];
+    for(int i = 0;i < S;i++){
+    	count_set[i] = 0;
+    }
 
     //LRU:  0               LFU:    1
     if(replacement_policy == 0)
@@ -168,6 +171,7 @@ bool Cache::readFromAddress(unsigned int add)
     read_num++;
     uint32_t  tag_containt  =   add>>(s+b);
     uint32_t  index_containt    =   (add<<(32-s-b))>>(32-s);
+    trace(index_containt, 0, tag_containt, 1);
     return  (this->*read_func)(index_containt,tag_containt,false);
 }
 
@@ -176,6 +180,7 @@ bool Cache::writeToAddress(unsigned int add)
     write_num++;
     uint32_t  tag_containt  =   add>>(s+b);
     uint32_t  index_containt    =   (add<<(32-s-b))>>(32-s);
+    trace(index_containt, 1, tag_containt, 1);
     return  (this->*write_func)(index_containt,tag_containt);
 }
 
@@ -333,6 +338,7 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)                  //0
 	    }
 	}
     }
+    // printf("%d ", available);
 
     if(hit == 1)
     {// 命中
@@ -385,6 +391,25 @@ bool Cache::WBWA(uint32_t index, uint32_t tag)                  //0
 bool Cache::WTNA(uint32_t index, uint32_t tag)                  //1
 {
     return true;
+}
+
+void Cache::trace(int index, bool fromWrite, uint32_t tag, bool printCache)
+{
+    if(index != traceSet) return;
+    fprintf(stderr,"set%4d:\n",index);
+    fprintf(stderr,"%s:    %08x\n",fromWrite?"Write":"Read ",tag);
+    if(!printCache) return;
+    string res_tag = "";
+    for(int j=0;j<assoc;j++){
+	int _index = index*assoc+j;
+	string isDirty = containt[_index][2]?" D":"  ";
+	fprintf(stderr,"---------------------\n");
+	fprintf(stderr,"  invalid: %8d\n",containt[_index][0]);
+	fprintf(stderr,"  tag:     %08x\n",containt[_index][1]);
+	fprintf(stderr,"  dirty:   %8s\n",isDirty.c_str());
+	fprintf(stderr,"  ref:     %8d\n",containt[_index][3]);
+    }
+    fprintf(stderr,"\n");
 }
 
 void Cache::printcontaint()

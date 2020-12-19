@@ -3,7 +3,7 @@
 #include "class_cache.h"
 
 int main(int argc, char *argv[]) {
-	if(argc != 7)
+	if(argc < 7)
 		cout<<"too less arguments"<<endl;
 
 	int		block_size = atoi(argv[1]);
@@ -12,7 +12,10 @@ int main(int argc, char *argv[]) {
 	int 	replacement_policy  =atoi(argv[4]);
 	int 	write_policy = atoi(argv[5]);
 	string		trace_file = argv[6];
-	Cache  *L1  = new  Cache(block_size,size,assoc,replacement_policy,write_policy);
+	int trace = -1;
+
+	if(argc == 8) trace = atoi(argv[7]);
+	Cache  *L1  = new  Cache(block_size,size,assoc,replacement_policy,write_policy,trace);
 
 	L1->deal_file(trace_file);
 	/*

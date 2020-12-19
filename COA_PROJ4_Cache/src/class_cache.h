@@ -15,9 +15,9 @@ private:
     int  replacement_policy;
     int  write_policy;
     uint32_t** containt;
-    Cache *next;
-	
-	uint32_t* count_set;
+    Cache *next;	
+    uint32_t* count_set;
+    int traceSet;// 欲跟踪的Cache块序号
 
     
 public:
@@ -31,13 +31,14 @@ public:
     bool   (Cache:: *read_func)(uint32_t,uint32_t,bool);
     bool   (Cache:: *write_func)(uint32_t,uint32_t);
 
-    Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_policy,int in_write_policy);
+    Cache(int  in_block_size,int in_size,int in_assoc, int in_replacement_policy,int in_write_policy,int trace);
     ~Cache();
 
     bool    readFromAddress(unsigned int add);
     bool    writeToAddress(unsigned int add);
-    void     deal_file(string   file_name);
-    void     printcontaint();
+    void    deal_file(string   file_name);
+    void    printcontaint();
+    void    trace(int index, bool fromWrite, uint32_t tag, bool printCache);
     
     bool    LRU(uint32_t index, uint32_t tag, bool fromWrite);
     bool    LFU(uint32_t index, uint32_t tag, bool fromWrite);
